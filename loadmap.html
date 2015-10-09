@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>加载天地图</title>
+	<script type="text/javascript" src="http://api.tianditu.com/js/maps.js"></script>
+</head>
+<script type="text/javascript">
+var cenL="113.3893";  //默认中心坐标经度
+var cenB="23.04954"; //默认中心坐标纬度
+var zoom=10; //默认缩放级别
+    function LoadMap(){//加载基本地图和导航
+    	try {
+                              map = new TMap("mapDiv"); //初始化地图对象
+                              if (zoom == 1) {  // 如果级别是1的话，就显示整张地图了。
+                              	cenB = 0;
+                              	cenL = 0;
+                              }
+                             map.centerAndZoom(new TLngLat(cenL, cenB), zoom);//设置显示地图的中心点和级别
+                             map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
+                         } catch(err) {
+                         	alert('天地图加载不成功，请稍候再试！你可以先使用其他功能！');
+                         }
+                     }
+                 </script>
+                 <body onload="LoadMap()">
+                 	<style type="text/css">
+                 		#mapDiv{
+                 			height:600px;
+                 			width: 100%;
+                 			border: 1px solid #ccc;
+                 		}
+                 	</style>
+                 	<div id="mapDiv"></div>
+                 </body>
+                 </html>
