@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN">
+<html>
+
+<head>
+	<meta charset="UTF-8" />
+	<title>
+		绘制电子区域
+	</title>
+	<script type="text/javascript" src="http://api.tianditu.com/js/maps.js"></script>
+	<script type="text/javascript" src="libs/jquery-1.11.2.min.js"></script>
+</head>
+<style type="text/css">
+	#mapDiv{
+		height:600px;
+		width: 100%;
+		border: 1px solid #ccc;
+		margin: 0 auto;                 			
+	}
+</style>
+
+
+<body style="margin:0;">
+	<div id="mapDiv" style="">
+	</div>
+	<div style="position:absolute;left:91%;top:15px; z-index:10000;">
+		<input type="button" id="button1" onclick="drawPolygon()" value="选择范围"/>
+		<input type="button" id="" onclick="polygonTool.clear();map.clearOverLays()" value="清除所画"/>
+		<input type="button" id="" onclick="drawPolygonByPoint()" value="查看刚才画的"/>
+	</div>
+	<script type="text/javascript">
+
+	var cenL="113.3893";  //默认中心坐标经度
+	var cenB="23.04954"; //默认中心坐标纬度
+	var zoom=10; //默认缩放级别
+   	 function loadMap(){//加载基本地图和导航
+   	 	try {
+	                              map = new TMap("mapDiv"); //初始化地图对象
+	                              if (zoom == 1) {  // 如果级别是1的话，就显示整张地图了。
+	                              	cenB = 0;
+	                              	cenL = 0;
+	                              }
+	                             map.centerAndZoom(new TLngLat(cenL, cenB), zoom);//设置显示地图的中心点和级别
+	                             map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
+	                         } catch(err) {
+	                         	alert('天地图加载不成功，请稍候再试！你可以先使用其他功能！');
+	                         }
+	                     }
+
+	//加载多边形测距工具。
+	function loadPolygonTool(){
+		var config = {
+			strokeColor:"blue",	//折线颜色
+			fillColor:"#FFFFFF",	//填充颜色。当参数为空时，折线覆盖物将没有填充效果
+			strokeWeight:"3px",	//折线的宽度，以像素为单位
+			strokeOpacity:0.5,	//折线的透明度，取值范围0 - 1
+			fillOpacity:0.5,		//填充的透明度，取值范围0 - 1
+			showLabel:false             //是否显示页面，默认为true.
+		};
+		//创建测面工具对象
+		polygonTool = new TPolygonTool(map,config);
+		//注册测面工具绘制完成后的事件
+		TEvent.addListener(polygonTool,"draw",onDrawPolygon);
+	}
+
+
+
+	//关闭测面工具时触发
+	function onDrawPolygon(bounds,line)
+	{
+		polygonTool.close();
+		PolygonPoints.length=PolygonPoints.length-2;//最后双击会把最后一个坐标保存两次。
+		TEvent.removeListener(mapclick);//关闭单击事件（保存坐标）
+		$("#button1").attr("onClick","drawPolygon()")
+		$("#button1").val("重选");
+	}
+
+
+
+	var PolygonPoints=[];  //保存所画坐标
+	var polygonTool;
+	var polygon; //画的矩形
+	var mapclick="";
+
+	function drawPolygon() {　
+		polygonTool.clear();//清除所画的多边形
+		map.clearOverLays();
+		polygonTool.open();
+		PolygonPoints.length=0;  //清零保存的坐标
+		if(mapclick!=""){
+			TEvent.removeListener(mapclick); //避免加载多次点击事件
+		}
+
+		mapclick = TEvent.addListener(map,"click",function(p){
+			polygonTool.open();
+			var lnglat = map.fromContainerPixelToLngLat(p);//获取点击处的坐标
+			PolygonPoints.push(lnglat.getLng());
+			PolygonPoints.push(lnglat.getLat());
+			if(PolygonPoints.length>20){
+				alert("不能超过10个点！请重新选择范围。");
+				polygonTool.close();
+				PolygonPoints.length=0;
+				TEvent.removeListener(mapclick);
+			}
+		});
+	}
+
+
+	function  drawPolygonByPoint(){　//根据点坐标来画多边形
+		map.removeOverLay(polygon);
+		var points = [];
+		if(PolygonPoints.length!=0){
+			for(var i=0;i<PolygonPoints.length;i=i+2){
+				points.push(new TLngLat(PolygonPoints[i],PolygonPoints[i+1]));
+			}
+			//创建面对象
+			polygon = new TPolygon(points,{strokeColor:"blue", strokeWeight:2, strokeOpacity:0.5, fillOpacity:0.5});
+	    		//向地图上添加面
+	    		map.addOverLay(polygon);
+	    	}else{
+	    		alert("没有选择电子栅栏！");
+	    	}
+
+	    }
+
+	    loadMap();
+	    loadPolygonTool();
+	</script>
+</body>
+
+</html>

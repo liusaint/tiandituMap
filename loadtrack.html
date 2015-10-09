@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>加载天地图轨迹</title>
+	<script type="text/javascript" src="http://api.tianditu.com/js/maps.js"></script>
+	<script type="text/javascript" src="libs/jquery-1.11.2.min.js"></script>
+</head>
+
+<body>
+	<style type="text/css">
+		#mapDiv{
+			height:600px;
+			width: 100%;
+			border: 1px solid #ccc;
+		}
+	</style>
+	<div id="mapDiv"></div>
+	<script type="text/javascript">
+
+		var map;
+		var lnglats = [
+		{"B":"23.1","L":"113.3","PName":"1111","Status":1},
+		{"B":"23.2","L":"113.4","PName":"2222","Status":1},
+		{"B":"23.9","L":"114.1","PName":"3333","Status":3004},
+		{"B":"24.7","L":"114.8","PName":"第四个点","Status":1},
+		{"B":"24.8","L":"115.5","PName":"第五个点","Status":1},
+		{"B":"25.3","L":"116.2","PName":"第六个点","Status":1},
+		{"B":"26.1","L":"116.7","PName":"7777","Status":1},
+		{"B":"27.5","L":"117.3","PName":"8888","Status":1}];
+		//这是页面需要的数据。实际应用中常用ajax获取。坐标点状态。点的类型。点的名字。
+
+
+		var maxl = lnglats[0].L,minl=lnglats[0].L,maxb=lnglats[0].B,minb=lnglats[0].B;
+		$.each(lnglats,
+			function(i, res) {
+				if(res.L > maxl) maxl =res.L;
+				if(res.L < minl) minl =res.L;
+				if(res.B > maxb) maxb =res.B;
+				if(res.B < minb) minb =res.B;
+			});
+
+		var cenB =(parseFloat(maxb)+parseFloat(minb))/2;
+		var cenL= (parseFloat(maxl)+parseFloat(minl))/2;
+		var zoom = getZoom(maxl, minl, maxb, minb);
+
+		//通过经纬度缩放级别
+		function getZoom(maxJ, minJ, maxW, minW) {
+			if (maxJ == minJ && maxW == minW) return 13;
+			var diff = maxJ - minJ;
+			if (diff < (maxW - minW) * 2.1) diff = (maxW - minW) * 2.1;
+			diff = parseInt(10000 * diff) / 10000;
+
+			var zoomArr = new Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+			var diffArr = new Array(180, 90, 45, 22, 11, 5.5, 2.75, 1.37, 0.68, 0.34, 0.17, 0.08, 0.04);
+
+			for (var i = 0; i < diffArr.length; i++) {
+				if ((diff - diffArr[i]) >= 0) {
+					return zoomArr[i];
+				}
+			}
+			return 14;
+		}
+
+
+
+
+		//加载基本地图和导航
+		function loadMap(){
+			try {
+				map = new TMap("mapDiv"); //初始化地图对象
+                              		if (zoom == 1) {  // 如果级别是1的话，就显示整张地图了。
+                              			cenB = 0;
+                              			cenL = 0;
+                              		}
+		                             map.centerAndZoom(new TLngLat(cenL, cenB), zoom);//设置显示地图的中心点和级别
+		                             map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
+		                         } catch(err) {
+		                         	alert('天地图加载不成功，请稍候再试！你可以先使用其他功能！');
+		                         }
+		                     }
+
+
+
+	var iconMaker = [];//用来装标注点。
+	//把轨迹点放到地图上
+	function loadTrack () {
+		if(iconMaker.length!=0){
+			for(var m=0;m<iconMaker.length;m++){
+				map.removeOverLay(iconMaker[m]);
+			}
+		}
+		var  iconurl0 = 'images/pointOffline.jpg';//正常节点
+		var iconurl1 = 'images/track_start_icon.png';//起点
+		var iconurl2 = 'images/track_end_icon.png';//终点
+		if (lnglats.length != 0) {
+			markerOpt = new TMarkerOptions();
+			var icon0= new TIcon(iconurl0, new TSize(4, 4), {anchor: new TPixel(4, 10)});
+			var icon1 = new TIcon(iconurl1, new TSize(39, 32), {anchor: new TPixel(17, 34)});
+			var icon2= new TIcon(iconurl2, new TSize(39, 32), {anchor: new TPixel(17, 34)});
+			for (var i = 0; i < lnglats.length; i = i + 1) {
+				iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon0});
+				map.addOverLay(iconMaker[i]);
+				if(i == 0){
+					iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon1});
+	              				map.addOverLay(iconMaker[i]);//起点
+	              			}else if(i == lnglats.length-1){
+	              				iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon2});
+	              				map.addOverLay(iconMaker[i]);//终点
+	              			}
+
+	              		}
+	              	}
+	              }
+
+
+              //连线部分 轨迹
+              function showLine() {
+              	var line;
+              	var points = [];
+              	for (var i = 0; i < lnglats.length; i = i + 1) {
+              		points.push(new TLngLat(lnglats[i].L, lnglats[i].B));
+              	}
+              	line = new TPolyline(points, {
+              		strokeColor: "green",
+              		strokeWeight: 1,
+              		strokeOpacity: 1
+              	});
+              	map.addOverLay(line);
+              }
+
+
+
+              loadMap();
+              loadTrack();
+              showLine();
+
+          </script>
+      </body>
+      </html>
