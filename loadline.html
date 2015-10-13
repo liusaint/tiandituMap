@@ -2,48 +2,11 @@
 <html>
 <head>
 	<meta charset="UTF-8" />
-	<title>加载天地图绽放级别</title>
+	<title>天地图连接与模拟点击事件</title>
 	<script type="text/javascript" src="http://api.tianditu.com/js/maps.js"></script>
 	<script type="text/javascript" src="libs/jquery-1.11.2.min.js"></script>
 </head>
-<style type="text/css">
-	.opt_station_hover{
-		background: rgb(77,103,130);
-		font-size: 12px;
-		width: 150px;
-		height: 47px;
-		border-radius: 5px;
-	}
-	.opt_station_hover_ul{
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		line-height: 23px;
-		text-indent: 4px;
-		color: white;
-		position: relative;
-	}
-	.opt_station_hover_ul li{
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		overflow: hidden;
-		height: 23px;
-	}
-	.opt_station_hover img{
-		position: absolute;
-		left: 50%;
-		margin-left: -5px;
-	}
-	.opt_li_left{
-		width: 65px;
-		display: bolck;
-		float: left;
-		text-align: right;
-	}
-
-</style>
-<body onload="">
+<body >
 	<style type="text/css">
 		#mapDiv{
 			height:600px;
@@ -204,7 +167,6 @@
 
 //根据连线LinePoints数组进行两两相连。
 //给线条添加点击事件。
-//
 function showSLine() {
 	/*在地图上画线start*/
 	var lineconfig={
