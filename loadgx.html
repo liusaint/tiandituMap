@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN">
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>行政区域热力图</title>
+	<script type="text/javascript" src="http://api.tianditu.com/js/maps.js"></script>
+	<script type="text/javascript" src="libs/jquery-1.11.2.min.js"></script>
+	<script type="text/javascript" src="libs/area.js"></script>
+</head>
+<style type="text/css">
+	#mapDiv{
+		height:600px;
+		margin: 10px;
+		border: 1px solid #ccc;
+		margin: 0 auto;                 			
+	}
+</style>
+
+
+<body>
+	<div id="mapDiv"></div>
+	<script type="text/javascript">
+
+		//加载基本地图和导航
+		function loadMap(){
+			try {
+	            map = new TMap("mapDiv"); //初始化地图对象
+	        	map.centerAndZoom(new TLngLat(108.31177, 22.806543), 7);//设置显示地图的中心点和级别 广西
+	        	map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
+	        } catch(err) {
+	        	alert('图加载不成功，请稍候再试！你可以先使用其他功能！');
+	        }
+	    }
+
+		//绘制边界,来自天地图demo.
+		function drawArea(json,opacity){
+
+			var area = json.area; 
+			var points = area.points; 
+			//如果有区域坐标信息，画出此行政区的多边形。 
+			if(points && points.length != 0){ 
+				//面的线的样式 
+				var style = { 
+					strokeColor : "#0027eb", 
+					fillColor : "red", 
+					strokeWeight : 1, 
+					strokeOpacity : 0.000001, 
+		        	fillOpacity : opacity, //透明度，随机生成。 
+		        	strokeStyle : "dashed" //虚线 
+		        } 
+		        for(var i = 0;i < points.length;i++){ 
+					var region = points[i].region;//单个面 
+					var pointArr = region.split(","); 
+					var pointsz = []; 
+					for(var j = 0;j < pointArr.length - 1;j++){ 
+						var p = pointArr[j]; 
+						var pArr = p.split(" "); 
+						var point = new TLngLat(pArr[0],pArr[1]); 
+						pointsz.push(point);				 
+					} 
+					var poly = new TPolygon(pointsz,style); 
+					map.addOverLay(poly); 
+				} 
+			} 
+		}
+
+		//生成随机正整数 1到n之间。
+		function getRandom(n){
+			return Math.floor(Math.random()*n+1)
+		}
+
+
+		loadMap();//加载地图。
+
+		var areaArr = [nanningArea,liuzhouArea,gunlinArea,wuzhouArea,beihaiArea,fangchenggangArea,qinzhouArea,guigangArea,yulinArea,baiseArea,hezhouArea,hechiArea,laibinArea,chongzuoArea,guilinArea];//边界坐标数组。
+
+		for (var i = 0,aLen = areaArr.length; i < aLen; i++) {
+			drawArea(areaArr[i],getRandom(50)/100);
+		};
+
+	</script>
+</body>
+
+</html>

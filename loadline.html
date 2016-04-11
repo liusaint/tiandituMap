@@ -9,298 +9,244 @@
 <body >
 	<style type="text/css">
 		#mapDiv{
-			height:600px;
-			width: 100%;
+			height:500px;
+			margin: 10px;
 			border: 1px solid #ccc;
-		}
-		input{
-			float: left;
 		}
 	</style>
 	<div id="mapDiv"></div>
 	<span class="">
-		<span  style="float:left;display:block;margin:0 5px 0 25px;">起点：</span>
-		<input  type="text"  class="top_input cz_top_input"  id="start_point">
-		<span  style="float:left;display:block;margin:0 5px 0 10px;">终点：</span>
-		<input  type="text"  class="top_input search_con cz_top_input"  id="end_point">
-		<input class="cz_top_i2 user_loadq_icon" id="user_loadq_icon" type="button" value="连接">
+		起点：<input  type="text"  id="start_point">
+		终点：<input  type="text"  id="end_point">
+		<input  id="connect" type="button" value="连接">
 	</span>
 	<script type="text/javascript">
+		var map;
 		var SLine=[];
 		var points = [];
-		var SLineclick=[];
-		var disLabel;
-		var LinePoints=[];
-		var map;
-
+		var SLineclick=[];//line的点击事件。
+		var disLabel;//距离。
+		var iconMaker = [];//用来装标注点。
+		var iconurl = 'images/pointOnline.jpg',iconurl1 = 'images/pointOffline.jpg',iconurl2 = 'images/choosed_station.png',iconurl3 = 'images/choosed_station_off.png';
 		//标注点数据
 		var lnglats = [
 		{"B":"23.2","L":"113.4","PName":"2222","Status":1},
 		{"B":"23.7","L":"113.8","PName":"第四个点","Status":0},
 		{"B":"23.1","L":"113.7","PName":"7777","Status":1},
 		{"B":"23.5","L":"113.3","PName":"8888","Status":1}];
-	
-                             //两两相连的数据。第一个点和第二个点是一条线。第三个点和第四个点是一条线……依次类推
-		var Line = [
-		{"B":"23.2","L":"113.4","PName":"2222","Status":1},
-		{"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
-		{"B":"23.2","L":"113.4","PName":"2222","Status":1},
-		{"B":"23.1","L":"113.7","PName":"7777","Status":1},
-		{"B":"23.2","L":"113.4","PName":"2222","Status":1},
-		{"B":"23.5","L":"113.3","PName":"8888","Status":1},
-		{"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
-		{"B":"23.1","L":"113.7","PName":"7777","Status":1},
-		{"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
-		{"B":"23.5","L":"113.3","PName":"8888","Status":1},
-		{"B":"23.1","L":"113.7","PName":"7777","Status":1},
-		{"B":"23.5","L":"113.3","PName":"8888","Status":1}
-		];
 
-		if(LinePoints.length == 0){
-			LinePoints=Line;
-		}
-
-		//求最大最小经纬度
-		var maxl = lnglats[0].L,minl=lnglats[0].L,maxb=lnglats[0].B,minb=lnglats[0].B;
-		$.each(lnglats,
-			function(i, res) {
-				if(res.L > maxl) maxl =res.L;
-				if(res.L < minl) minl =res.L;
-				if(res.B > maxb) maxb =res.B;
-				if(res.B < minb) minb =res.B;
-			});
-
-		var cenB =(parseFloat(maxb)+parseFloat(minb))/2;
-		var cenL= (parseFloat(maxl)+parseFloat(minl))/2;
-		var zoom = getZoom(maxl, minl, maxb, minb);
-
-		//通过经纬度缩放级别
-		function getZoom(maxJ, minJ, maxW, minW) {
-			if (maxJ == minJ && maxW == minW) return 13;
-			var diff = maxJ - minJ;
-			if (diff < (maxW - minW) * 2.1) diff = (maxW - minW) * 2.1;
-			diff = parseInt(10000 * diff) / 10000;
-
-			var zoomArr = new Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
-			var diffArr = new Array(180, 90, 45, 22, 11, 5.5, 2.75, 1.37, 0.68, 0.34, 0.17, 0.08, 0.04);
-
-			for (var i = 0; i < diffArr.length; i++) {
-				if ((diff - diffArr[i]) >= 0) {
-					return zoomArr[i];
-				}
-			}
-			return 14;
-		}
-
+        //两两相连的数据。第一个点和第二个点是一条线。第三个点和第四个点是一条线……依次类推
+        var LinePoints = [
+        {"B":"23.2","L":"113.4","PName":"2222","Status":1},
+        {"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
+        {"B":"23.2","L":"113.4","PName":"2222","Status":1},
+        {"B":"23.1","L":"113.7","PName":"7777","Status":1},
+        {"B":"23.2","L":"113.4","PName":"2222","Status":1},
+        {"B":"23.5","L":"113.3","PName":"8888","Status":1},
+        {"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
+        {"B":"23.1","L":"113.7","PName":"7777","Status":1},
+        {"B":"23.7","L":"113.8","PName":"第四个点","Status":1},
+        {"B":"23.5","L":"113.3","PName":"8888","Status":1},
+        {"B":"23.1","L":"113.7","PName":"7777","Status":1},
+        {"B":"23.5","L":"113.3","PName":"8888","Status":1}
+        ];
 		//加载基本地图
 		function loadMap(){
 			try {
 				map = new TMap("mapDiv"); //初始化地图对象
-                              		if (zoom == 1) {  // 如果级别是1的话，就显示整张地图了。
-                              			cenB = 0;
-                              			cenL = 0;
-                              		}
-		                             map.centerAndZoom(new TLngLat(cenL, cenB), zoom);//设置显示地图的中心点和级别
-		                             map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
-		                         } catch(err) {
-		                         	alert('天地图加载不成功，请稍候再试！你可以先使用其他功能！');
-		                         }
-		                     }
-
-
-
-	var iconMaker = [];//用来装标注点。
-
-	var     iconurl ='images/pointOnline.jpg';
-	var     iconurl1 = 'images/pointOffline.jpg';
-	var     iconurl2 =  'images/choosed_station.png';
-	var     iconurl3 = 'images/choosed_station_off.png';
-	//两种图标，根据status判断用哪一种。
-	var  icon = new TIcon(iconurl, new TSize(20, 20), {anchor: new TPixel(12, 12)});
-	var   icon1 = new TIcon(iconurl1, new TSize(20, 20), {anchor: new TPixel(12, 12)});
-        	var  icon2= new TIcon(iconurl2, new TSize(30, 30), {anchor: new TPixel(17, 17)});//大图标
-            	var  icon3= new TIcon(iconurl3, new TSize(30, 30), {anchor: new TPixel(17, 17)});//大图标
-
-	//把标注点画到地图上，根据在线状态显示不同颜色图标。
-	function loadIcon(){
-		//如果地图上有点，先清除。 这一段可以根据实际情况看要不要。
-		if(iconMaker.length!=0){
-			for(var m=0;m<iconMaker.length;m++){
-				map.removeOverLay(iconMaker[m]);
-			}
+		        map.centerAndZoom(new TLngLat(113.56607,23.39279), 10);//中国
+		        map.enableHandleMouseScroll(); //允许鼠标双击放大地图   
+		    } catch(err) {
+		    	alert('天地图加载不成功，请稍候再试！你可以先使用其他功能！');
+		    }
 		}
-		if (lnglats.length != 0) {
-			for (var i = 0; i < lnglats.length; i = i + 1) {
-				//设置经纬度和图标。
-				if (lnglats[i].Status == 1) {
-					iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon});
-				} else {
-					iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon1});
-				}
-				iconMaker[i].id=i;
-				map.addOverLay(iconMaker[i]);// 添加标注
-			}
-		}
-	}
-
-	var label =[];
-	//把标注点名字画到地图上
-	function loadText(){
-		if (lnglats.length != 0) {
-			for (var i = 0; i < lnglats.length; i = i + 1) {
-				var config = {
-					text:lnglats[i].PName,
-					offset:new TPixel(0,10),
-					position:new TLngLat(lnglats[i].L,lnglats[i].B)
-				};
-	        			label[i]=new TLabel(config);//创建地图文本对象
-	        			label[i].setAnchorPer([0.5,0]);//偏移量
-	        			label[i].setBorderLine (0);
-	        			map.addOverLay(label[i]);
-	        			$('.stationByNum').parent().css({
-	        				"padding":"0"
-	        			});
-	        		}
-	        	}
-	        }
 
 
-//根据连线LinePoints数组进行两两相连。
-//给线条添加点击事件。
-function showSLine() {
-	/*在地图上画线start*/
-	var lineconfig={
-		strokeColor: "rgb(0,68,102)",
-		strokeWeight: 2,
-		strokeOpacity: 1,
-		strokeStyle:"dashed"
-	};
 
-	var disconfig = {//测距工具的配置
-			strokeColor:"blue",	//折线颜色
-			strokeWeight:"3px",	//折线的宽度，以像素为单位
-			strokeOpacity:0.5,	//折线的透明度，取值范围0 - 1
-			strokeStyle:"solid"	//折线的样式，solid或dashed
-		};
-	//创建测距工具对象
-	lineTool = new TPolylineTool(map,disconfig);
 
-	for (var i = 0; i < LinePoints.length; i = i + 2) {
-		var j=i+1;
-		var k=i/2;
-		points[k]=[];
-		points[k].push(new TLngLat(LinePoints[i].L, LinePoints[i].B));
-		points[k].push(new TLngLat(LinePoints[j].L, LinePoints[j].B));
-		SLine[k] = new TPolyline(points[k],lineconfig);//创建线条的对象
-		points[k].dis=lineTool.getDistance(points[k]);//计算一条线两个点之间距离
-		if(points[k].dis>60000){//大于60的用红色
-			SLine[k].setStrokeColor("red");
-		}
-		SLine[k].id=k;
-		SLine[k].distance=LinePoints[i].distance;
-		SLine[k].LineName=LinePoints[i].PName+"-"+LinePoints[j].PName;//给线条命名。就是两个点名中间多一个“-”.
+		//4种图标，根据status判断用哪一种。
+		var  icon = new TIcon(iconurl, new TSize(20, 20), {anchor: new TPixel(12, 12)});
+		var   icon1 = new TIcon(iconurl1, new TSize(20, 20), {anchor: new TPixel(12, 12)});
+	    var  icon2= new TIcon(iconurl2, new TSize(30, 30), {anchor: new TPixel(17, 17)});//大图标
+	    var  icon3= new TIcon(iconurl3, new TSize(30, 30), {anchor: new TPixel(17, 17)});//大图标
 
-		(function() {//给线条添加点击事件。
-			var l=SLine[k];
-			SLineclick[k] = TEvent.addListener(l, "click",function() {//线的点击事件
-				//点击线的第一件是是把地图上的线条恢复到原始状态。就是把所有的线变成虚线。
-				for(var i=0;i<SLine.length;i++){
-					SLine[i].setStrokeStyle("dashed");
-				}
-				l.setStrokeStyle("solid");//把当前线设为实线。
-				var thepoints=l.getLngLats();//获取线两端的点，
-				thepointL1=thepoints[0][0]/100000;
-				thepointL2=thepoints[1][0]/100000;
-				thepointL1=thepointL1.toFixed(3);
-				thepointL2=thepointL2.toFixed(3);//ie5.5+
-				var  dispoints=[];
-				var discenterArr=[];
-				var discenterP={};//线两个端点点的中心坐标，在这里添加距离显示
-				for(var j=0;j<lnglats.length;j++){
-					//点击线，把地图上的标注恢复到原始状态。
-					if (lnglats[j].Status == 1) {//恢复初始图标
-						iconMaker[j].setIcon(icon);
+		//把标注点画到地图上，根据在线状态显示不同颜色图标。
+		function loadIcon(){
+			//如果地图上有点，先清除。 这一段可以根据实际情况看要不要。
+			map.clearOverLays();
+			if (lnglats.length != 0) {
+				for (var i = 0; i < lnglats.length; i = i + 1) {
+					//设置经纬度和图标。
+					if (lnglats[i].Status == 1) {
+						iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon});
 					} else {
-						iconMaker[j].setIcon(icon1);
+						iconMaker[i]  = new TMarker(new TLngLat(lnglats[i].L, lnglats[i].B), {icon: icon1});
 					}
-					//如果lnglats数组中的点的L值与线条的端点的L值相差在0.01以内，我们就认为它是同一个点。
-					//也就是说我们点线条的时候，这个标注点将作为线条的端点来进行变化。
-					if(Math.abs(lnglats[j].L-thepointL1)<0.01){
-						if(lnglats[j].Status == 1){
-							iconMaker[j].setIcon(icon2);
-						}else{
-							iconMaker[j].setIcon(icon3);
-						}
-						
-						dispoints.push(new TLngLat(lnglats[j].L, lnglats[j].B));
-						discenterArr.push(lnglats[j]);
-					}
-					if(Math.abs(lnglats[j].L-thepointL2)<0.01){
-						if(lnglats[j].Status == 1){
-							iconMaker[j].setIcon(icon2);
-						}else{
-							iconMaker[j].setIcon(icon3);
-						}
-						dispoints.push(new TLngLat(lnglats[j].L, lnglats[j].B));
-						discenterArr.push(lnglats[j]);
-					}
+					iconMaker[i].id=i;
+					map.addOverLay(iconMaker[i]);// 添加标注
 				}
-				//点击线时，在线条的中心位置，显示两个点的距离，也就是线条长度。
-				discenterP.L=(parseFloat(discenterArr[0].L)+parseFloat(discenterArr[1].L))/2;
-				discenterP.B=(parseFloat(discenterArr[0].B)+parseFloat(discenterArr[1].B))/2;
+			}
+		}
 
-				var distance=lineTool.getDistance(dispoints);
-				distance=distance/1000;
-				distance=distance.toFixed(1);
 
-				var disconfig = {
-					text:distance+'KM',
-					offset:new TPixel(10,10),
-					position:new TLngLat(discenterP.L,discenterP.B)
-				};
-       				 //创建地图文本对象
-       				 map.removeOverLay(disLabel);
-       				 disLabel=new TLabel(disconfig);
-       				 disLabel.setBorderColor("rgb(40,150,205)");
-       				 map.addOverLay(disLabel);
-       				});
-		})();
-        	//向地图上添加线
-        	map.addOverLay(SLine[k]);
-        }
-    }
+		//把标注点名字画到地图上
+		function loadText(){
+			var label =[];
+			if (lnglats.length != 0) {
+				for (var i = 0; i < lnglats.length; i = i + 1) {
+					var config = {
+						text:lnglats[i].PName,
+						offset:new TPixel(0,10),
+						position:new TLngLat(lnglats[i].L,lnglats[i].B)
+					};
+	    			label[i]=new TLabel(config);//创建地图文本对象
+	    			label[i].setAnchorPer([0.5,0]);//偏移量
+	    			label[i].setBorderLine (0);
+	    			map.addOverLay(label[i]);
+	    			$('.stationByNum').parent().css({
+	    				"padding":"0"
+	    			});
+	    		}
+	    	}
+	    }
 
-    var LineName=[];
-    $(document).ready(function(){
-	//输入两个点名。地图上显示两个点相连的效果。
-   	$("#user_loadq_icon").click(function(){
-    		var start_point=$("#start_point").val();
-    		var end_point=$("#end_point").val();
-    		if(start_point==""||end_point==""){
-    			return;
-    		}
 
-    		var pointName=start_point+"-"+end_point;
-    		var pointName1=end_point+"-"+start_point;
+		//根据连线LinePoints数组进行两两相连。
+		//给线条添加点击事件。
+		function showSLine() {
+			/*在地图上画线start*/
+			var lineconfig={
+				strokeColor: "rgb(0,68,102)",
+				strokeWeight: 2,
+				strokeOpacity: 1,
+				strokeStyle:"dashed"
+			};
 
-    		LineName.length=0;
-    		LineName.push(pointName);
-    		LineName.push(pointName1);
+			var disconfig = {//测距工具的配置
+				strokeColor:"blue",	//折线颜色
+				strokeWeight:"3px",	//折线的宽度，以像素为单位
+				strokeOpacity:0.5,	//折线的透明度，取值范围0 - 1
+				strokeStyle:"solid"	//折线的样式，solid或dashed
+			};
+			//创建测距工具对象
+			lineTool = new TPolylineTool(map,disconfig);
 
-		//遍历SLine。查找名字。
-    		for(var i=0;i<SLine.length;i++){
-    			if(SLine[i].LineName ==LineName[0] || SLine[i].LineName ==LineName[1] ){
-    				TEvent.trigger(SLine[i],"click");//找到名字之后模拟点击线条。触发点击事件。连接两个点。
-    			}
+			for (var i = 0; i < LinePoints.length; i = i + 2) {
+				var j=i+1;
+				var k=i/2;
+				points[k]=[];
+				points[k].push(new TLngLat(LinePoints[i].L, LinePoints[i].B));
+				points[k].push(new TLngLat(LinePoints[j].L, LinePoints[j].B));
+				SLine[k] = new TPolyline(points[k],lineconfig);//创建线条的对象
+				points[k].dis=lineTool.getDistance(points[k]);//计算一条线两个点之间距离
+				if(points[k].dis>60000){//大于60的用红色
+					SLine[k].setStrokeColor("red");
+				}
+				SLine[k].id=k;
+				SLine[k].distance=LinePoints[i].distance;
+				SLine[k].LineName=LinePoints[i].PName+"-"+LinePoints[j].PName;//给线条命名。就是两个点名中间多一个“-”.
 
-    		}
-    	})
-    })
+				(function() {//给线条添加点击事件。
+					var l=SLine[k];
+					SLineclick[k] = TEvent.addListener(l, "click",function(){//线的点击事件
+					//点击线的第一件是是把地图上的线条恢复到原始状态。就是把所有的线变成虚线。
+					for(var i=0;i<SLine.length;i++){
+						SLine[i].setStrokeStyle("dashed");
+					}
+					l.setStrokeStyle("solid");//把当前线设为实线。
+					var thepoints=l.getLngLats();//获取线两端的点，
+					thepointL1=thepoints[0][0]/100000;
+					thepointL2=thepoints[1][0]/100000;
+					thepointL1=thepointL1.toFixed(3);
+					thepointL2=thepointL2.toFixed(3);//ie5.5+
+					var  dispoints=[];
+					var discenterArr=[];
+					var discenterP={};//线两个端点点的中心坐标，在这里添加距离显示
+					for(var j=0;j<lnglats.length;j++){
+						//点击线，把地图上的标注恢复到原始状态。
+						if (lnglats[j].Status == 1) {//恢复初始图标
+							iconMaker[j].setIcon(icon);
+						} else {
+							iconMaker[j].setIcon(icon1);
+						}
+						//如果lnglats数组中的点的L值与线条的端点的L值相差在0.01以内，我们就认为它是同一个点。
+						//也就是说我们点线条的时候，这个标注点将作为线条的端点来进行变化。
+						if(Math.abs(lnglats[j].L-thepointL1)<0.01){
+							if(lnglats[j].Status == 1){
+								iconMaker[j].setIcon(icon2);
+							}else{
+								iconMaker[j].setIcon(icon3);
+							}
+							
+							dispoints.push(new TLngLat(lnglats[j].L, lnglats[j].B));
+							discenterArr.push(lnglats[j]);
+						}
+						if(Math.abs(lnglats[j].L-thepointL2)<0.01){
+							if(lnglats[j].Status == 1){
+								iconMaker[j].setIcon(icon2);
+							}else{
+								iconMaker[j].setIcon(icon3);
+							}
+							dispoints.push(new TLngLat(lnglats[j].L, lnglats[j].B));
+							discenterArr.push(lnglats[j]);
+						}
+					}
+					//点击线时，在线条的中心位置，显示两个点的距离，也就是线条长度。
+					discenterP.L=(parseFloat(discenterArr[0].L)+parseFloat(discenterArr[1].L))/2;
+					discenterP.B=(parseFloat(discenterArr[0].B)+parseFloat(discenterArr[1].B))/2;
 
-	        loadMap();
-	        loadIcon();
-	        loadText();
-	        showSLine();
-</script>
+					var distance=lineTool.getDistance(dispoints);
+					distance=distance/1000;
+					distance=distance.toFixed(1);
+
+					var disconfig = {
+						text:distance+'KM',
+						offset:new TPixel(10,10),
+						position:new TLngLat(discenterP.L,discenterP.B)
+					};
+	       			//创建地图文本对象
+	       			map.removeOverLay(disLabel);
+	       			disLabel=new TLabel(disconfig);
+	       			disLabel.setBorderColor("rgb(40,150,205)");
+	       			map.addOverLay(disLabel);
+	       		});
+				})();
+	        	//向地图上添加线
+	        	map.addOverLay(SLine[k]);
+	        }
+	    }   
+
+	    var LineName=[];
+	    $(document).ready(function(){
+			//输入两个点名。地图上显示两个点相连的效果。
+			$("#connect").click(function(){
+				var start_point=$("#start_point").val();
+				var end_point=$("#end_point").val();
+				if(start_point==""||end_point==""){
+					return;
+				}
+
+				var pointName=start_point+"-"+end_point;
+				var pointName1=end_point+"-"+start_point;
+
+				LineName.length=0;
+				LineName.push(pointName);
+				LineName.push(pointName1);
+
+				//遍历SLine。查找名字。
+				for(var i=0;i<SLine.length;i++){
+					if(SLine[i].LineName ==LineName[0] || SLine[i].LineName ==LineName[1] ){
+		    			TEvent.trigger(SLine[i],"click");//找到名字之后模拟点击线条。触发点击事件。连接两个点。
+		    		}
+
+		    	}
+		    })
+		})
+
+	    loadMap();
+	    loadIcon();
+	    loadText();
+	    showSLine();
+	</script>
 </body>
 </html>
