@@ -19,6 +19,11 @@
 
 6.复杂操作。天地图标注点间线条点击事件以及模拟点击。
 
+7.天地图行政区域热力图。
 
-详细解析参见：
-http://blog.csdn.net/liusaint1992/article/category/5854891
+
+详细解析：http://blog.csdn.net/liusaint1992/article/category/5854891
+
+演示地址：http://runningls.com/demos/tianditu/
+
+主要整理于2015年末。
